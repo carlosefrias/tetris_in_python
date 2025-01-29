@@ -43,6 +43,8 @@ class Tetris:
         self.game_over = False
         self.score = 0
         self.level = 1
+        self.font = pygame.font.SysFont('Arial', 24)
+        self.game_over_font = pygame.font.SysFont('Arial', 48)
 
     def new_piece(self):
         shape = random.choice(SHAPES)
@@ -118,9 +120,24 @@ class Tetris:
                 for j, cell in enumerate(row):
                     if cell:
                         pygame.draw.rect(screen, self.current_piece['color'], ((self.current_piece['x'] + j) * BLOCK_SIZE, (self.current_piece['y'] + i) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 0)
+        # Draw the next piece
+        for i, row in enumerate(self.next_piece['shape']):
+            for j, cell in enumerate(row):
+                if cell:
+                    pygame.draw.rect(screen, self.next_piece['color'], ((self.width + j + 1) * BLOCK_SIZE, (i + 1) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 0)
+        # Draw the score
+        score_text = self.font.render(f'Score: {self.score}', True, WHITE)
+        screen.blit(score_text, (10, 10))
+        # Draw the level
+        level_text = self.font.render(f'Level: {self.level}', True, WHITE)
+        screen.blit(level_text, (10, 40))
+        # Draw the game over screen
+        if self.game_over:
+            game_over_text = self.game_over_font.render('Game Over', True, RED)
+            screen.blit(game_over_text, (self.width * BLOCK_SIZE // 2 - game_over_text.get_width() // 2, self.height * BLOCK_SIZE // 2 - game_over_text.get_height() // 2))
 
 def main():
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH + 150, SCREEN_HEIGHT))
     pygame.display.set_caption("Tetris")
     clock = pygame.time.Clock()
     game = Tetris(SCREEN_WIDTH // BLOCK_SIZE, SCREEN_HEIGHT // BLOCK_SIZE)
