@@ -120,6 +120,8 @@ class Tetris:
                 for j, cell in enumerate(row):
                     if cell:
                         pygame.draw.rect(screen, self.current_piece['color'], ((self.current_piece['x'] + j) * BLOCK_SIZE, (self.current_piece['y'] + i) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 0)
+        # Draw the vertical line
+        pygame.draw.line(screen, WHITE, (self.width * BLOCK_SIZE, 0), (self.width * BLOCK_SIZE, SCREEN_HEIGHT), 2)
         # Draw the next piece
         for i, row in enumerate(self.next_piece['shape']):
             for j, cell in enumerate(row):
