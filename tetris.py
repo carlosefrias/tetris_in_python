@@ -1,5 +1,7 @@
 import pygame
 import random
+import sqlite3
+import time
 
 # Initialize pygame
 pygame.init()
@@ -45,6 +47,10 @@ class Tetris:
         self.level = 1
         self.font = pygame.font.SysFont('Arial', 24)
         self.game_over_font = pygame.font.SysFont('Arial', 48)
+        self.conn = sqlite3.connect('tetris_scores.db')
+        self.cursor = self.conn.cursor()
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, score INTEGER)''')
+        self.conn.commit()
 
     def new_piece(self):
         shape = random.choice(SHAPES)
@@ -76,6 +82,7 @@ class Tetris:
         self.next_piece = self.new_piece()
         if not self.valid_move(self.current_piece, self.current_piece['x'], self.current_piece['y']):
             self.game_over = True
+            self.save_score()
 
     def clear_lines(self):
         lines_cleared = 0
@@ -137,6 +144,18 @@ class Tetris:
         if self.game_over:
             game_over_text = self.game_over_font.render('Game Over', True, RED)
             screen.blit(game_over_text, (self.width * BLOCK_SIZE // 2 - game_over_text.get_width() // 2, self.height * BLOCK_SIZE // 2 - game_over_text.get_height() // 2))
+            top_scores = self.get_top_scores()
+            for index, score in enumerate(top_scores):
+                score_text = self.font.render(f'{index + 1}. {score}', True, WHITE)
+                screen.blit(score_text, (self.width * BLOCK_SIZE // 2 - score_text.get_width() // 2, self.height * BLOCK_SIZE // 2 + game_over_text.get_height() // 2 + 30 * (index + 1)))
+
+    def save_score(self):
+        self.cursor.execute('INSERT INTO scores (score) VALUES (?)', (self.score,))
+        self.conn.commit()
+
+    def get_top_scores(self):
+        self.cursor.execute('SELECT score FROM scores ORDER BY score DESC LIMIT 5')
+        return [row[0] for row in self.cursor.fetchall()]
 
 def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH + 150, SCREEN_HEIGHT))
@@ -178,6 +197,10 @@ def main():
         game.draw(screen)
         pygame.display.flip()
 
+    # Persist the game over screen for three seconds
+    game.draw(screen)
+    pygame.display.flip()
+    time.sleep(3)
     pygame.quit()
 
 if __name__ == "__main__":
