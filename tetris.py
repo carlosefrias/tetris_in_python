@@ -86,11 +86,9 @@ class Tetris:
 
     def clear_lines(self):
         lines_cleared = 0
-        for i in range(self.height - 1, -1, -1):
-            if all(self.grid[i]):
-                lines_cleared += 1
-                del self.grid[i]
-                self.grid.insert(0, [0 for _ in range(self.width)])
+        new_grid = [row for row in self.grid if not all(row)]
+        lines_cleared = self.height - len(new_grid)
+        self.grid = [[0 for _ in range(self.width)] for _ in range(lines_cleared)] + new_grid
         self.score += lines_cleared ** 2 * 100
         self.level = 1 + self.score // 1000
 
