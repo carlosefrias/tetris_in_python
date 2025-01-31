@@ -2,6 +2,7 @@ import pygame
 import random
 import sqlite3
 import time
+import numpy as np
 
 # Initialize pygame
 pygame.init()
@@ -34,6 +35,30 @@ SHAPES = [
 ]
 
 SHAPE_COLORS = [CYAN, MAGENTA, YELLOW, GREEN, RED, ORANGE, BLUE]
+
+# Sound frequencies
+ROTATE_SOUND_FREQ = 440  # A4
+DROP_SOUND_FREQ = 523  # C5
+CLEAR_LINE_SOUND_FREQ = 659  # E5
+GAME_OVER_SOUND_FREQ = 392  # G4
+
+# Sound duration
+SOUND_DURATION = 100  # milliseconds
+
+def generate_sound(frequency, duration):
+    sample_rate = 44100
+    n_samples = int(sample_rate * duration / 1000)
+    t = np.linspace(0, duration / 1000, n_samples, False)
+    wave = 0.5 * np.sin(2 * np.pi * frequency * t)
+    wave = np.int16(wave * 32767)
+    stereo_wave = np.column_stack((wave, wave))  # Make it 2-dimensional for stereo sound
+    sound = pygame.sndarray.make_sound(stereo_wave)
+    return sound
+
+rotate_sound = generate_sound(ROTATE_SOUND_FREQ, SOUND_DURATION)
+drop_sound = generate_sound(DROP_SOUND_FREQ, SOUND_DURATION)
+clear_line_sound = generate_sound(CLEAR_LINE_SOUND_FREQ, SOUND_DURATION)
+game_over_sound = generate_sound(GAME_OVER_SOUND_FREQ, SOUND_DURATION)
 
 class Tetris:
     def __init__(self, width, height):
@@ -77,12 +102,13 @@ class Tetris:
             for j, cell in enumerate(row):
                 if cell:
                     self.grid[self.current_piece['y'] + i][self.current_piece['x'] + j] = self.current_piece['color']
-        self.clear_lines()
+        lines_cleared = self.clear_lines()
         self.current_piece = self.next_piece
         self.next_piece = self.new_piece()
         if not self.valid_move(self.current_piece, self.current_piece['x'], self.current_piece['y']):
             self.game_over = True
             self.save_score()
+            pygame.mixer.Sound.play(game_over_sound)
 
     def clear_lines(self):
         lines_cleared = 0
@@ -91,6 +117,9 @@ class Tetris:
         self.grid = [[0 for _ in range(self.width)] for _ in range(lines_cleared)] + new_grid
         self.score += lines_cleared ** 2 * 100
         self.level = 1 + self.score // 1000
+        if lines_cleared > 0:
+            pygame.mixer.Sound.play(clear_line_sound)
+        return lines_cleared
 
     def move(self, dx):
         new_x = self.current_piece['x'] + dx
@@ -102,11 +131,13 @@ class Tetris:
         new_shape = [list(row) for row in zip(*piece['shape'][::-1])]
         if self.valid_move({'shape': new_shape, 'x': piece['x'], 'y': piece['y']}, piece['x'], piece['y']):
             self.current_piece['shape'] = new_shape
+            pygame.mixer.Sound.play(rotate_sound)
 
     def drop(self):
         while self.valid_move(self.current_piece, self.current_piece['x'], self.current_piece['y'] + 1):
             self.current_piece['y'] += 1
         self.place_piece()
+        pygame.mixer.Sound.play(drop_sound)
 
     def update(self):
         if not self.game_over:
@@ -198,6 +229,7 @@ def main():
     # Persist the game over screen for three seconds
     game.draw(screen)
     pygame.display.flip()
+    pygame.mixer.Sound.play(game_over_sound)
     time.sleep(3)
     pygame.quit()
 
